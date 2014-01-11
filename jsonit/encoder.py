@@ -13,7 +13,7 @@ def encode_message(message):
 
 class JsonitEncoder(json.JSONEncoder):
     default_encoders = (
-        (Promise, unicode),
+        (Promise, str),
         (Message, encode_message),
         (datetime.datetime, lambda d: d.isoformat()),
         (datetime.date, lambda d: d.isoformat()),

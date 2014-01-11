@@ -1,4 +1,5 @@
 import datetime
+import json
 from unittest import TestCase
 
 from django.contrib import messages
@@ -24,26 +25,27 @@ class JSONResponseTest(BaseTest):
     def setUp(self):
         self.request = HttpRequest()
         self.request.META['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest'
+        self.decoder = json.JSONDecoder()
 
     def test_success(self):
         response = JSONResponse(self.request)
         self.assertEqual(
-            response.content,
-            '{"messages": [], "details": {}, "success": true}'
+            self.decoder.decode(response.content.decode()),
+            self.decoder.decode('{"messages": [], "details": {}, "success": true}')
         )
 
     def test_not_success(self):
         response = JSONResponse(self.request, success=False)
         self.assertEqual(
-            response.content,
-            '{"messages": [], "details": {}, "success": false}'
+            self.decoder.decode(response.content.decode()),
+            self.decoder.decode('{"messages": [], "details": {}, "success": false}')
         )
 
     def test_details(self):
         response = JSONResponse(self.request, details={'test': 1})
         self.assertEqual(
-            response.content,
-            '{"messages": [], "details": {"test": 1}, "success": true}'
+            self.decoder.decode(response.content.decode()),
+            self.decoder.decode('{"messages": [], "details": {"test": 1}, "success": true}')
         )
 
 
@@ -55,6 +57,7 @@ class MessageTest(BaseTest):
         self._old_LEVEL_TAGS = messages_base.LEVEL_TAGS
         messages_base.LEVEL_TAGS = DEFAULT_TAGS
         self.request._messages = SessionStorage(self.request)
+        self.decoder = json.JSONDecoder()
 
     def tearDown(self):
         messages_base.LEVEL_TAGS = self._old_LEVEL_TAGS
@@ -63,16 +66,16 @@ class MessageTest(BaseTest):
         messages.info(self.request, 'Hello')
         response = JSONResponse(self.request)
         self.assertEqual(
-            response.content,
-            '{"messages": [{"message": "Hello", "class": "info"}], '
-            '"details": {}, "success": true}'
+            self.decoder.decode(response.content.decode()),
+            self.decoder.decode('{"messages": [{"message": "Hello", "class": "info"}], '
+            '"details": {}, "success": true}')
         )
 
 
 class EncoderTest(TestCase):
 
     def test_lazy(self):
-        test_msg = lazy(lambda: 'Test!', unicode)
+        test_msg = lazy(lambda: 'Test!', str)
         self.assertEqual(encode(test_msg()), '"Test!"')
 
     def test_datetime(self):
